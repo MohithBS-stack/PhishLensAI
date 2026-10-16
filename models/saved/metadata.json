@@ -1,0 +1,25 @@
+{
+  "phase": "Phase 2",
+  "generated_at": "2026-10-13T12:00:41Z",
+  "artifacts": {
+    "sms_classifier": {
+      "file": "sms_classifier.joblib",
+      "algorithm": "TfidfVectorizer + LogisticRegression",
+      "task": "SMS Spam / Suspicious Baseline",
+      "positive_class": "spam (1)",
+      "negative_class": "ham (0)",
+      "test_f1_score": 0.9428,
+      "test_accuracy": 0.9848
+    },
+    "url_classifier": {
+      "file": "url_classifier.joblib",
+      "algorithm": "StandardScaler + HistGradientBoostingClassifier",
+      "task": "Live URL Phishing Detection (Lexical)",
+      "positive_class": "Phishing (1)",
+      "negative_class": "Legitimate (0)",
+      "feature_count": 18,
+      "test_f1_score": 0.9976,
+      "test_accuracy": 0.9980
+    }
+  }
+}

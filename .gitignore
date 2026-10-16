@@ -1,0 +1,69 @@
+# Environments
+.env
+.env.local
+.env.*.local
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Datasets (Preserve data locally, never commit large or raw data)
+datasets/raw/
+datasets/processed/
+*.csv
+*.tsv
+
+# Model Artifacts & Weights (Allow lightweight production artifacts <= 1MB)
+models/raw/
+models/*.pkl
+models/*.onnx
+models/*.pt
+models/*.bin
+artifacts/
+*.pkl
+*.onnx
+*.pt
+!models/saved/
+!models/saved/*.joblib
+!models/saved/*.json
+
+# Node & Frontend
+node_modules/
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo

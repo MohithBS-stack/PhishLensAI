@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: phishlens-ai-backend
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: "pip install -r backend/requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT --app-dir backend --limit-concurrency 50 --timeout-keep-alive 15"
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: CORS_ORIGINS
+        value: '["https://phishlens-ai.vercel.app","http://localhost:3000"]'
+      - key: URL_MODEL_PATH
+        value: models/saved/url_classifier.joblib
+      - key: SMS_MODEL_PATH
+        value: models/saved/sms_classifier.joblib
+      - key: ENABLE_LLM_EXPLANATION
+        value: "true"
+      - key: LLM_TIMEOUT_SECONDS
+        value: "5.0"
+      - key: RISK_THRESHOLD_HIGH
+        value: "70.0"
+      - key: RISK_THRESHOLD_SUSPICIOUS
+        value: "30.0"
+      # Optional: set GEMINI_API_KEY in Render dashboard environment settings

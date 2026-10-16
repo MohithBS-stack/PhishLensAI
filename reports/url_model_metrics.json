@@ -1,0 +1,120 @@
+{
+  "model_name": "Live URL Phishing Classifier",
+  "model_type": "StandardScaler + HistGradientBoostingClassifier",
+  "dataset": "PhiUSIIL Phishing URL Dataset (Prasad & Chandra, 2023)",
+  "dataset_path": "datasets\\raw\\phiusiil\\PhiUSIIL_Phishing_URL_Dataset.csv",
+  "total_dataset_rows": 235795,
+  "total_dataset_columns": 56,
+  "included_feature_count": 18,
+  "included_features": [
+    "URLLength",
+    "DomainLength",
+    "IsDomainIP",
+    "TLDLength",
+    "NoOfSubDomain",
+    "HasObfuscation",
+    "NoOfObfuscatedChar",
+    "ObfuscationRatio",
+    "NoOfLettersInURL",
+    "LetterRatioInURL",
+    "NoOfDegitsInURL",
+    "DegitRatioInURL",
+    "NoOfEqualsInURL",
+    "NoOfQMarkInURL",
+    "NoOfAmpersandInURL",
+    "NoOfOtherSpecialCharsInURL",
+    "SpacialCharRatioInURL",
+    "IsHTTPS"
+  ],
+  "excluded_feature_count": 37,
+  "excluded_webpage_features": [
+    "LineOfCode",
+    "LargestLineLength",
+    "HasTitle",
+    "Title",
+    "DomainTitleMatchScore",
+    "URLTitleMatchScore",
+    "HasFavicon",
+    "Robots",
+    "IsResponsive",
+    "NoOfURLRedirect",
+    "NoOfSelfRedirect",
+    "HasDescription",
+    "NoOfPopup",
+    "NoOfiFrame",
+    "HasExternalFormSubmit",
+    "HasSocialNet",
+    "HasSubmitButton",
+    "HasHiddenFields",
+    "HasPasswordField",
+    "Bank",
+    "Pay",
+    "Crypto",
+    "HasCopyrightInfo",
+    "NoOfImage",
+    "NoOfCSS",
+    "NoOfJS",
+    "NoOfSelfRef",
+    "NoOfEmptyRef",
+    "NoOfExternalRef"
+  ],
+  "excluded_other_features": [
+    "FILENAME",
+    "URL",
+    "Domain",
+    "TLD",
+    "URLSimilarityIndex",
+    "TLDLegitimateProb",
+    "URLCharProb",
+    "CharContinuationRate"
+  ],
+  "random_seed": 42,
+  "train_samples": 188636,
+  "test_samples": 47159,
+  "positive_class": "Phishing (1, re-mapped from raw label 0)",
+  "negative_class": "Legitimate (0, re-mapped from raw label 1)",
+  "metrics": {
+    "accuracy": 0.998,
+    "precision": 0.9994,
+    "recall": 0.9959,
+    "f1_score": 0.9976,
+    "confusion_matrix": [
+      [
+        26957,
+        13
+      ],
+      [
+        83,
+        20106
+      ]
+    ],
+    "classification_report": {
+      "Legitimate": {
+        "precision": 0.9969304733727811,
+        "recall": 0.9995179829440118,
+        "f1-score": 0.9982225513793742,
+        "support": 26970.0
+      },
+      "Phishing": {
+        "precision": 0.9993538446244843,
+        "recall": 0.9958888503640596,
+        "f1-score": 0.9976183387913069,
+        "support": 20189.0
+      },
+      "accuracy": 0.9979643334252211,
+      "macro avg": {
+        "precision": 0.9981421589986327,
+        "recall": 0.9977034166540357,
+        "f1-score": 0.9979204450853405,
+        "support": 47159.0
+      },
+      "weighted avg": {
+        "precision": 0.9979679305326157,
+        "recall": 0.9979643334252211,
+        "f1-score": 0.997963884996701,
+        "support": 47159.0
+      }
+    }
+  },
+  "artifact_path": "models\\saved\\url_classifier.joblib"
+}
