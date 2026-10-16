@@ -117,18 +117,18 @@ export interface UnifiedScanPayload {
   include_explanation?: boolean;
 }
 
-const API_BASE_URL = (
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-).replace(/\/+$/, "");
+const rawApiUrl = (process.env.NEXT_PUBLIC_API_URL || "").trim();
+export const API_BASE_URL = (rawApiUrl || "http://localhost:8000").replace(/\/+$/, "");
 
 const DEFAULT_TIMEOUT_MS = 20000;
+const HEALTH_TIMEOUT_MS = 25000;
 
 /**
  * Health check endpoint
  */
 export async function fetchHealth(): Promise<HealthResponse> {
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), 6000);
+  const id = setTimeout(() => controller.abort(), HEALTH_TIMEOUT_MS);
   try {
     const res = await fetch(`${API_BASE_URL}/health`, {
       cache: "no-store",

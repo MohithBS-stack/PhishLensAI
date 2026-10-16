@@ -34,3 +34,31 @@ def test_api_v1_health_endpoint(client):
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert data["status"] == "healthy"
+
+
+def test_cors_origin_regex_and_preflight(client):
+    """Verify that project-specific Vercel domains match while third-party apps are blocked."""
+    # 1. Allowed project Vercel preview origin via regex
+    response = client.get("/health", headers={"Origin": "https://phishlens-ai-custom-branch.vercel.app"})
+    assert response.status_code == status.HTTP_200_OK
+    assert response.headers.get("access-control-allow-origin") == "https://phishlens-ai-custom-branch.vercel.app"
+
+    # 2. Preflight OPTIONS request for project Vercel origin
+    options_res = client.options(
+        "/health",
+        headers={
+            "Origin": "https://phishlens-ai-custom-branch.vercel.app",
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    assert options_res.status_code == status.HTTP_200_OK
+    assert options_res.headers.get("access-control-allow-origin") == "https://phishlens-ai-custom-branch.vercel.app"
+
+    # 3. Disallowed arbitrary third-party Vercel app (strictly rejected)
+    arbitrary_vercel = client.get("/health", headers={"Origin": "https://unrelated-tenant-app.vercel.app"})
+    assert "access-control-allow-origin" not in arbitrary_vercel.headers
+
+    # 4. Disallowed attacker origin
+    disallowed = client.get("/health", headers={"Origin": "https://malicious-site.com"})
+    assert "access-control-allow-origin" not in disallowed.headers

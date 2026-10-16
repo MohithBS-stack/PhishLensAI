@@ -17,6 +17,8 @@ services:
         value: "false"
       - key: CORS_ORIGINS
         value: '["https://phishlens-ai.vercel.app","http://localhost:3000"]'
+      - key: CORS_ORIGIN_REGEX
+        value: "^https://(phishlens-ai|phish-lens-ai|phishlensai)[a-z0-9-]*\\.vercel\\.app$"
       - key: URL_MODEL_PATH
         value: models/saved/url_classifier.joblib
       - key: SMS_MODEL_PATH

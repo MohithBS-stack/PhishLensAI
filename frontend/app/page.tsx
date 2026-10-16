@@ -8,6 +8,7 @@ import {
   HealthResponse,
   UnifiedReportResponse,
   UnifiedScanPayload,
+  API_BASE_URL,
 } from "@/lib/api";
 import { Navbar } from "@/components/Navbar";
 import { InvestigationForm } from "@/components/InvestigationForm";
@@ -24,22 +25,55 @@ export default function Home() {
   const [loadingScan, setLoadingScan] = useState<boolean>(false);
   const [scanError, setScanError] = useState<string | null>(null);
 
-  // Load health telemetry on mount
-  const checkHealth = () => {
+  // Manual health check trigger with overlap protection
+  const checkHealth = (retriesLeft = 0, delayMs = 3000) => {
+    if (loadingHealth && retriesLeft === 0) return; // Prevent duplicate overlapping clicks
     setLoadingHealth(true);
     fetchHealth()
       .then((data) => {
         setHealth(data);
         setLoadingHealth(false);
       })
-      .catch(() => {
-        setHealth(null);
-        setLoadingHealth(false);
+      .catch((err) => {
+        console.warn("[PhishLens] Health check attempt failed:", err);
+        if (retriesLeft > 0) {
+          setTimeout(() => {
+            checkHealth(retriesLeft - 1, delayMs * 1.5);
+          }, delayMs);
+        } else {
+          setHealth(null);
+          setLoadingHealth(false);
+        }
       });
   };
 
   useEffect(() => {
-    checkHealth();
+    let isMounted = true;
+    let timerId: ReturnType<typeof setTimeout> | null = null;
+
+    setLoadingHealth(true);
+    const runInitialCheck = (retriesLeft: number, delay: number) => {
+      fetchHealth()
+        .then((data) => {
+          if (!isMounted) return;
+          setHealth(data);
+          setLoadingHealth(false);
+        })
+        .catch((err) => {
+          if (!isMounted) return;
+          console.warn("[PhishLens] Initial health check failed:", err);
+          if (retriesLeft > 0) {
+            timerId = setTimeout(() => {
+              if (isMounted) runInitialCheck(retriesLeft - 1, delay * 1.5);
+            }, delay);
+          } else {
+            setHealth(null);
+            setLoadingHealth(false);
+          }
+        });
+    };
+
+    runInitialCheck(2, 4000);
 
     // Load local browser session history
     try {
@@ -51,6 +85,11 @@ export default function Home() {
     } catch {
       // sessionStorage unavailable or parse error; fallback gracefully
     }
+
+    return () => {
+      isMounted = false;
+      if (timerId) clearTimeout(timerId);
+    };
   }, []);
 
   const saveToHistory = (newReport: UnifiedReportResponse) => {
@@ -83,6 +122,7 @@ export default function Home() {
       const report = await scanUnified(payload);
       setCurrentReport(report);
       saveToHistory(report);
+      if (!health) checkHealth(0);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Investigation failed";
       setScanError(msg);
@@ -99,6 +139,7 @@ export default function Home() {
       const report = await investigateMultimodal(formData);
       setCurrentReport(report);
       saveToHistory(report);
+      if (!health) checkHealth(0);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Multimodal analysis failed";
       setScanError(msg);
@@ -113,7 +154,7 @@ export default function Home() {
       <Navbar
         health={health}
         loadingHealth={loadingHealth}
-        onRefreshHealth={checkHealth}
+        onRefreshHealth={() => checkHealth(0)}
       />
 
       {/* Main Workspace */}
@@ -140,10 +181,7 @@ export default function Home() {
               <p className="font-semibold mb-0.5">Backend Service Offline</p>
               <p className="text-slate-400">
                 The frontend cannot currently connect to the FastAPI backend at{" "}
-                <code className="text-amber-200">
-                  {process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}
-                </code>
-                . Please verify that the backend is running (`uvicorn app.main:app --port 8000`).
+                <code className="text-amber-200">{API_BASE_URL}</code>. Please verify that the backend is running (`uvicorn app.main:app --port 8000`) or that CORS allows this origin.
               </p>
             </div>
           </div>

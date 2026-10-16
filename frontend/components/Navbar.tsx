@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { HealthResponse } from "@/lib/api";
+import { HealthResponse, API_BASE_URL } from "@/lib/api";
 
 interface NavbarProps {
   health: HealthResponse | null;
@@ -14,7 +14,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   loadingHealth,
   onRefreshHealth,
 }) => {
-  const isHealthy = health?.status === "healthy";
+  const isHealthy = health?.status === "healthy" || health?.status === "ok";
 
   return (
     <header className="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md sticky top-0 z-40 px-4 sm:px-8 py-3.5 flex items-center justify-between transition-all">
@@ -42,7 +42,13 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="flex items-center gap-3">
         <button
           onClick={onRefreshHealth}
-          title="Click to re-check backend connection"
+          title={
+            loadingHealth
+              ? `Checking connection to ${API_BASE_URL}...`
+              : isHealthy
+              ? `Connected to ${API_BASE_URL} (${health?.status})`
+              : `Connection failed to ${API_BASE_URL}. Click to retry.`
+          }
           className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-medium border transition-colors cursor-pointer ${
             loadingHealth
               ? "bg-slate-900 text-slate-400 border-slate-700"

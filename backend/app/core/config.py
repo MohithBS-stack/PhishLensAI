@@ -28,7 +28,9 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:8000",
+        "https://phishlens-ai.vercel.app",
     ]
+    CORS_ORIGIN_REGEX: Optional[str] = r"^https:\/\/(phishlens-ai|phish-lens-ai|phishlensai)[a-z0-9-]*\.vercel\.app$"
 
     # Future Model paths
     URL_MODEL_PATH: str = "models/saved/url_classifier.joblib"
@@ -59,6 +61,14 @@ class Settings(BaseSettings):
         elif isinstance(v, list):
             return [str(item).strip() for item in v if str(item).strip()]
         return ["http://localhost:3000", "http://127.0.0.1:3000"]
+
+    @field_validator("CORS_ORIGIN_REGEX", mode="before")
+    @classmethod
+    def assemble_cors_origin_regex(cls, v: Any) -> Optional[str]:
+        if v is None:
+            return None
+        v_str = str(v).strip()
+        return v_str if v_str else None
 
 
 settings = Settings()
