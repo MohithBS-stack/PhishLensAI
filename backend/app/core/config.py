@@ -1,5 +1,5 @@
 """Application Settings and Configuration."""
-from typing import List, Union, Optional
+from typing import Any, List, Optional, Union
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
