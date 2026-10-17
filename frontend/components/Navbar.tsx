@@ -2,13 +2,23 @@
 
 import React from "react";
 import { HealthResponse, API_BASE_URL } from "@/lib/api";
-import { Shield, RefreshCw, Radio, Terminal } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import {
+  Shield,
+  RefreshCw,
+  Radio,
+  Terminal,
+  User as UserIcon,
+  LogOut,
+  Lock,
+} from "lucide-react";
 
 interface NavbarProps {
   health: HealthResponse | null;
   loadingHealth: boolean;
   onRefreshHealth: () => void;
   onNewScan?: () => void;
+  onOpenAuth?: (mode?: "login" | "register") => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -16,7 +26,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   loadingHealth,
   onRefreshHealth,
   onNewScan,
+  onOpenAuth,
 }) => {
+  const { user, logout, isLoading: authLoading } = useAuth();
   const isHealthy = health?.status === "healthy" || health?.status === "ok";
 
   return (
@@ -92,6 +104,40 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Radio className="w-3 h-3 text-[#ea4e1b]" />
             <span>MODELS: 2 LOADED</span>
           </div>
+
+          {/* Operator Authentication State */}
+          {user ? (
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <div
+                className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-mono tracking-wider text-[#9ed4b9] bg-[#14231b] border border-[#1d4731]"
+                title={`Operator: ${user.email}`}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-[#177846] shrink-0" />
+                <span className="hidden sm:inline font-bold">OP:</span>
+                <span className="truncate max-w-[100px] sm:max-w-[130px]">
+                  {user.full_name || user.email.split("@")[0]}
+                </span>
+              </div>
+              <button
+                onClick={() => logout()}
+                disabled={authLoading}
+                title="End operator session"
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-mono tracking-wider uppercase bg-[#18191d] text-[#9a9ca8] hover:text-[#f8ab93] hover:border-[#5e2720] border border-[#27282f] transition-colors cursor-pointer"
+              >
+                <LogOut className="w-3 h-3" />
+                <span className="hidden md:inline">SIGN OUT</span>
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => onOpenAuth?.("login")}
+              disabled={authLoading}
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 text-[11px] font-mono tracking-wider uppercase border border-[#ea4e1b] text-[#ea4e1b] hover:bg-[#ea4e1b] hover:text-[#111215] font-bold transition-colors cursor-pointer"
+            >
+              <UserIcon className="w-3 h-3" />
+              <span>SIGN IN</span>
+            </button>
+          )}
 
           {/* New Investigation Action */}
           {onNewScan && (

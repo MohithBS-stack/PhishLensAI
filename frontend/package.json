@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --test tests/proxy.test.ts tests/auth.test.ts tests/cases.test.ts"
   },
   "dependencies": {
     "lucide-react": "^1.59.0",

@@ -117,8 +117,27 @@ export interface UnifiedScanPayload {
   include_explanation?: boolean;
 }
 
-const rawApiUrl = (process.env.NEXT_PUBLIC_API_URL || "").trim();
-export const API_BASE_URL = (rawApiUrl || "http://localhost:8000").replace(/\/+$/, "");
+/**
+ * Resolves the API base URL safely across environments.
+ *
+ * In production browser environments, relative same-origin URLs ("") are strictly enforced
+ * so browser requests route through the Next.js same-origin proxy, preventing accidental
+ * proxy bypass and cross-site third-party cookie blocking.
+ */
+export function resolveApiBaseUrl(
+  rawEnvUrl?: string,
+  isProduction: boolean = process.env.NODE_ENV === "production",
+  isBrowser: boolean = typeof window !== "undefined"
+): string {
+  if (isProduction && isBrowser) {
+    return "";
+  }
+  const trimmed = (rawEnvUrl || "").trim().replace(/\/+$/, "");
+  return trimmed || "";
+}
+
+export const API_BASE_URL = resolveApiBaseUrl(process.env.NEXT_PUBLIC_API_URL);
+
 
 const DEFAULT_TIMEOUT_MS = 20000;
 const HEALTH_TIMEOUT_MS = 25000;

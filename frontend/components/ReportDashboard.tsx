@@ -21,18 +21,32 @@ import {
   Layers,
   Cpu,
   Terminal,
-  FileSpreadsheet,
+  Database,
+  Loader2,
   Info,
+  FileSpreadsheet,
 } from "lucide-react";
 
 interface ReportDashboardProps {
   report: UnifiedReportResponse;
   onReset?: () => void;
+  isSavedToDb?: boolean;
+  isSavingToDb?: boolean;
+  saveToDbError?: string | null;
+  onSaveToDb?: () => void;
+  onOpenAuth?: (mode?: "login" | "register") => void;
+  isAuthenticated?: boolean;
 }
 
 export const ReportDashboard: React.FC<ReportDashboardProps> = ({
   report,
   onReset,
+  isSavedToDb = false,
+  isSavingToDb = false,
+  saveToDbError = null,
+  onSaveToDb,
+  onOpenAuth,
+  isAuthenticated = false,
 }) => {
   const [activeModality, setActiveModality] = useState<string>("all");
   const [copiedMarkdown, setCopiedMarkdown] = useState(false);
@@ -205,7 +219,47 @@ ${uncertainty.calibration_disclosure}
             <strong className="text-[#4d5058]">CALIBRATION:</strong> {uncertainty.calibration_disclosure}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            {/* Database Cloud Persistence Status / Action */}
+            {isAuthenticated ? (
+              isSavedToDb ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#eff8f3] text-[#177846] border border-[#9ed4b9] text-xs font-mono uppercase font-bold">
+                  <Database className="w-3.5 h-3.5 text-[#177846]" />
+                  <span>DOSSIER SAVED</span>
+                </span>
+              ) : isSavingToDb ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#faf9f5] text-[#747782] border border-[#cfccc2] text-xs font-mono uppercase">
+                  <Loader2 className="w-3.5 h-3.5 text-[#ea4e1b] animate-spin" />
+                  <span>SAVING...</span>
+                </span>
+              ) : (
+                <button
+                  onClick={onSaveToDb}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#faf9f5] hover:bg-[#edebe4] text-[#ea4e1b] border border-[#ea4e1b] transition-colors cursor-pointer text-xs uppercase font-bold"
+                  title="Save this investigation dossier to your private database ledger"
+                >
+                  <Database className="w-3.5 h-3.5" />
+                  <span>SAVE TO DATABASE</span>
+                </button>
+              )
+            ) : (
+              <button
+                onClick={() => onOpenAuth?.("login")}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#faf9f5] hover:bg-[#edebe4] text-[#4d5058] border border-[#cfccc2] transition-colors cursor-pointer text-xs uppercase"
+                title="Sign in to save this dossier permanently"
+              >
+                <Database className="w-3.5 h-3.5 text-[#747782]" />
+                <span className="hidden sm:inline">SIGN IN TO PERSIST</span>
+                <span className="sm:hidden">PERSIST</span>
+              </button>
+            )}
+
+            {saveToDbError && (
+              <span className="text-[10px] text-[#ea4e1b] font-mono">
+                {saveToDbError}
+              </span>
+            )}
+
             <button
               onClick={handleCopyMarkdown}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#ffffff] hover:bg-[#edebe4] text-[#121316] border border-[#cfccc2] transition-colors cursor-pointer text-xs uppercase"
