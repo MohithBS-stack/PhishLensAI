@@ -29,13 +29,18 @@ if is_ci and not is_postgres_available:
         pytrace=False,
     )
 
-pytestmark = pytest.mark.skipif(
-    not is_postgres_available,
-    reason="PostgreSQL test database not available. Set TEST_DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/db to run live PostgreSQL integration tests.",
-)
+pytestmark = [
+    pytest.mark.skipif(
+        not is_postgres_available,
+        reason="PostgreSQL test database not available. Set TEST_DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/db to run live PostgreSQL integration tests.",
+    ),
+    pytest.mark.asyncio,
+]
 
 
-@pytest.fixture
+import pytest_asyncio
+
+@pytest_asyncio.fixture(scope="function")
 async def pg_engine():
     """Async engine fixture connected to PostgreSQL test database."""
     engine = create_async_engine(TEST_DB_URL, echo=False)
@@ -48,7 +53,7 @@ async def pg_engine():
     await engine.dispose()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture(scope="function")
 async def pg_session(pg_engine):
     """Session fixture for PostgreSQL integration tests."""
     session_factory = async_sessionmaker(bind=pg_engine, class_=AsyncSession, expire_on_commit=False)
