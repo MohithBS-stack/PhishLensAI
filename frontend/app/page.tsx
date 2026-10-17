@@ -14,6 +14,19 @@ import { Navbar } from "@/components/Navbar";
 import { InvestigationForm } from "@/components/InvestigationForm";
 import { ReportDashboard } from "@/components/ReportDashboard";
 import { SessionHistory } from "@/components/SessionHistory";
+import {
+  AlertTriangle,
+  AlertOctagon,
+  X,
+  Shield,
+  FileText,
+  Globe,
+  Image as ImageIcon,
+  Mic,
+  ArrowDown,
+  Terminal,
+  Cpu,
+} from "lucide-react";
 
 const SESSION_STORAGE_KEY = "phishlens_local_session_history";
 
@@ -149,39 +162,102 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
-      {/* Navigation Header */}
+    <div className="min-h-screen bg-[#f6f5f0] text-[#121316] flex flex-col font-sans selection:bg-[#ea4e1b] selection:text-[#ffffff]">
+      {/* Application Navigation Header */}
       <Navbar
         health={health}
         loadingHealth={loadingHealth}
         onRefreshHealth={() => checkHealth(0)}
+        onNewScan={currentReport ? () => setCurrentReport(null) : undefined}
       />
 
-      {/* Main Workspace */}
-      <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
-        {/* Hero Section */}
-        <div className="space-y-2.5">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-semibold bg-cyan-950/80 text-cyan-400 border border-cyan-800/60">
-            <span className="h-1.5 w-10 rounded-full bg-cyan-400 animate-pulse" />
-            CyberForge 2026 Production Triage
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white">
-            Multimodal Threat Investigation &amp; Evidence Fusion
-          </h2>
-          <p className="text-slate-400 text-sm sm:text-base max-w-3xl leading-relaxed">
-            PhishLens AI fuses lexical URL analysis, SMS/smishing NLP models, screenshot OCR, and audio transcription into one unified forensic investigation backed by explainable psychological manipulation detection.
-          </p>
-        </div>
+      {/* Main Investigation Workspace */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+        {/* Editorial Swiss/Bauhaus Hero & System Overview */}
+        <section className="bg-[#ffffff] border border-[#cfccc2] p-6 sm:p-8 shadow-sm">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-[#e4e1d8]">
+            <div className="space-y-2 max-w-3xl">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono tracking-widest text-[#ea4e1b] uppercase font-bold bg-[#fdf3ef] px-2 py-0.5 border border-[#f8ab93]">
+                  OPERATIONAL SPECIFICATION v1.0
+                </span>
+                <span className="text-[10px] font-mono tracking-wider text-[#747782] uppercase">
+                  CYBERSECURITY FORENSIC ENGINE
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-4xl font-mono font-extrabold tracking-tight text-[#121316]">
+                Multimodal Threat Investigation &amp; Evidence Fusion
+              </h1>
+              <p className="text-xs sm:text-sm text-[#4d5058] leading-relaxed font-sans">
+                PhishLens AI executes passive, evidence-grounded threat triage across message transcripts, embedded URLs, screenshot OCR captures, and voicemail audio. Features are correlated through dual ML classifiers and psychological manipulation detection into an explainable forensic dossier.
+              </p>
+            </div>
 
-        {/* Backend Warning if offline */}
+            {/* Quick Modality Capability Badges */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono shrink-0">
+              <div className="p-2.5 border border-[#e4e1d8] bg-[#faf9f5]">
+                <div className="flex items-center gap-1.5 text-[10px] text-[#747782] uppercase mb-0.5">
+                  <FileText className="w-3 h-3 text-[#ea4e1b]" />
+                  <span>MODEL A</span>
+                </div>
+                <div className="font-bold text-[#121316] text-[11px]">SMS Smishing NLP</div>
+              </div>
+              <div className="p-2.5 border border-[#e4e1d8] bg-[#faf9f5]">
+                <div className="flex items-center gap-1.5 text-[10px] text-[#747782] uppercase mb-0.5">
+                  <Globe className="w-3 h-3 text-[#ea4e1b]" />
+                  <span>MODEL B</span>
+                </div>
+                <div className="font-bold text-[#121316] text-[11px]">PhiUSIIL URL Engine</div>
+              </div>
+              <div className="p-2.5 border border-[#e4e1d8] bg-[#faf9f5]">
+                <div className="flex items-center gap-1.5 text-[10px] text-[#747782] uppercase mb-0.5">
+                  <ImageIcon className="w-3 h-3 text-[#ea4e1b]" />
+                  <span>VISION</span>
+                </div>
+                <div className="font-bold text-[#121316] text-[11px]">OCR Extraction</div>
+              </div>
+              <div className="p-2.5 border border-[#e4e1d8] bg-[#faf9f5]">
+                <div className="flex items-center gap-1.5 text-[10px] text-[#747782] uppercase mb-0.5">
+                  <Mic className="w-3 h-3 text-[#ea4e1b]" />
+                  <span>SPEECH</span>
+                </div>
+                <div className="font-bold text-[#121316] text-[11px]">Whisper STT Core</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Workflow Sequence Indicator */}
+          <div className="pt-4 flex flex-col sm:flex-row sm:items-center justify-between text-[11px] font-mono text-[#747782] gap-2">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-[#121316]">WORKFLOW:</span>
+              <span>1. Ingest Evidence</span>
+              <span>›</span>
+              <span>2. Passive Feature Extraction</span>
+              <span>›</span>
+              <span>3. Classifier Inference</span>
+              <span>›</span>
+              <span>4. Structured Dossier</span>
+            </div>
+            <div className="text-[10px] uppercase font-bold text-[#ea4e1b]">
+              ZERO HOST VISITS • PASSIVE ONLY
+            </div>
+          </div>
+        </section>
+
+        {/* Backend Warning Banner if offline */}
         {!loadingHealth && !health && (
-          <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-800/80 text-xs text-amber-300 flex items-start gap-3">
-            <span className="text-amber-400 font-bold text-sm">⚠️</span>
-            <div>
-              <p className="font-semibold mb-0.5">Backend Service Offline</p>
-              <p className="text-slate-400">
-                The frontend cannot currently connect to the FastAPI backend at{" "}
-                <code className="text-amber-200">{API_BASE_URL}</code>. Please verify that the backend is running (`uvicorn app.main:app --port 8000`) or that CORS allows this origin.
+          <div className="p-4 bg-[#fef8ee] border border-[#fcd38d] text-xs font-mono text-[#b45309] flex items-start gap-3 shadow-sm">
+            <AlertTriangle className="w-4 h-4 shrink-0 text-[#b45309] mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-bold uppercase tracking-wider">
+                BACKEND SERVICE UNREACHABLE
+              </p>
+              <p className="text-[#4d5058] font-sans text-xs">
+                The frontend cannot currently establish a connection with the FastAPI backend at{" "}
+                <code className="text-[#b45309] font-mono font-bold bg-[#ffffff] px-1.5 py-0.5 border border-[#fcd38d]">
+                  {API_BASE_URL}
+                </code>
+                . Please verify that the backend process is running or click the API status button in the top navigation bar to retry.
               </p>
             </div>
           </div>
@@ -196,48 +272,64 @@ export default function Home() {
 
         {/* Scan Error Banner */}
         {scanError && (
-          <div className="p-4 rounded-2xl bg-rose-950/60 border border-rose-800/90 text-xs text-rose-300 flex items-start justify-between gap-3 shadow-lg">
+          <div className="p-4 bg-[#fdf3ef] border border-[#f8ab93] text-xs font-mono text-[#ea4e1b] flex items-start justify-between gap-3 shadow-sm">
             <div className="flex items-start gap-2.5">
-              <span className="text-rose-400 font-bold text-base">✕</span>
+              <AlertOctagon className="w-4 h-4 text-[#ea4e1b] shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold block text-sm mb-0.5">
-                  Investigation Error
+                <span className="font-bold block uppercase tracking-wider">
+                  INVESTIGATION DISPATCH ERROR
                 </span>
-                <p className="text-slate-300">{scanError}</p>
+                <p className="text-[#4d5058] font-sans text-xs mt-0.5">{scanError}</p>
               </div>
             </div>
             <button
               onClick={() => setScanError(null)}
-              className="text-slate-400 hover:text-slate-200 text-xs font-mono"
+              className="text-[#747782] hover:text-[#ea4e1b] p-1 cursor-pointer"
+              title="Dismiss error"
             >
-              Dismiss
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
         )}
 
         {/* Results Report Dashboard */}
         {currentReport && (
-          <ReportDashboard
-            report={currentReport}
-            onReset={() => setCurrentReport(null)}
-          />
+          <div className="scroll-mt-20">
+            <ReportDashboard
+              report={currentReport}
+              onReset={() => setCurrentReport(null)}
+            />
+          </div>
         )}
 
-        {/* Session History Drawer */}
+        {/* Session History Ledger */}
         <SessionHistory
           history={history}
-          onSelectCase={(caseItem) => setCurrentReport(caseItem)}
+          onSelectCase={(caseItem) => {
+            setCurrentReport(caseItem);
+            window.scrollTo({ top: 400, behavior: "smooth" });
+          }}
           onClearHistory={handleClearHistory}
           currentCaseId={currentReport?.case_id}
         />
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 px-6 py-6 text-center text-xs text-slate-500 space-y-1">
-        <p>PhishLens AI — Built for CyberForge Hackathon 2026.</p>
-        <p className="text-[11px] text-slate-600">
-          Strict passive evaluation only. Zero live domain crawling or server-side payload retention.
-        </p>
+      {/* Industrial Security Console Footer */}
+      <footer className="border-t border-[#cfccc2] bg-[#ffffff] px-4 sm:px-6 lg:px-8 py-6 text-xs font-mono text-[#747782] mt-auto">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-4 w-4 bg-[#ea4e1b] text-[#ffffff] flex items-center justify-center font-bold text-[9px]">
+              PL
+            </div>
+            <span>PHISHLENS AI // FORENSIC TRIAGE CONSOLE</span>
+            <span className="text-[#cfccc2]">|</span>
+            <span>CYBERFORGE 2026</span>
+          </div>
+
+          <div className="text-[11px] text-center sm:text-right text-[#4d5058]">
+            Passive threat evaluation protocol • Zero external domain crawling • No server-side payload retention
+          </div>
+        </div>
       </footer>
     </div>
   );

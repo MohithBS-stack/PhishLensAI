@@ -1,8 +1,29 @@
 "use client";
 
 import React, { useState } from "react";
-import { UnifiedReportResponse, NormalizedEvidence, ManipulationTactic } from "@/lib/api";
+import {
+  UnifiedReportResponse,
+  NormalizedEvidence,
+  ManipulationTactic,
+} from "@/lib/api";
 import { ThreatScoreGauge } from "./ThreatScoreGauge";
+import {
+  FileText,
+  Copy,
+  Download,
+  RotateCcw,
+  Check,
+  ShieldAlert,
+  AlertTriangle,
+  CheckCircle2,
+  HelpCircle,
+  ExternalLink,
+  Layers,
+  Cpu,
+  Terminal,
+  FileSpreadsheet,
+  Info,
+} from "lucide-react";
 
 interface ReportDashboardProps {
   report: UnifiedReportResponse;
@@ -90,7 +111,7 @@ ${uncertainty.calibration_disclosure}
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `phishlens-report-${case_id}.json`;
+    a.download = `phishlens-forensic-report-${case_id}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -98,172 +119,211 @@ ${uncertainty.calibration_disclosure}
   const getSeverityBadgeClass = (sev: string) => {
     switch (sev.toLowerCase()) {
       case "critical":
-        return "bg-rose-950 text-rose-300 border-rose-800";
+        return "bg-[#fdf3ef] text-[#ea4e1b] border-[#f8ab93]";
       case "high":
-        return "bg-orange-950 text-orange-300 border-orange-800";
+        return "bg-[#fdf3ef] text-[#ea4e1b] border-[#f8ab93]";
       case "medium":
-        return "bg-amber-950 text-amber-300 border-amber-800";
+        return "bg-[#fef8ee] text-[#b45309] border-[#fcd38d]";
       default:
-        return "bg-slate-800 text-slate-300 border-slate-700";
+        return "bg-[#f1f3f5] text-[#525763] border-[#c4c8d3]";
     }
   };
 
   return (
-    <div className="space-y-6 transition-all">
-      {/* 1. Header & Verdict Summary Card */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/70 backdrop-blur-xl p-6 sm:p-8 shadow-2xl">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-6 pb-6 border-b border-slate-800/80">
-          <div className="flex-1 space-y-2 text-center lg:text-left">
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
-              <span className="font-mono text-xs text-slate-400 bg-slate-950 px-2.5 py-1 rounded-md border border-slate-800">
-                Case: {case_id}
-              </span>
-              <span className="text-xs text-slate-500 font-mono">
-                {timestamp ? new Date(timestamp).toLocaleTimeString() : "Just now"}
-              </span>
-              {explanation.is_llm_generated ? (
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800">
-                  AI Grounded Briefing ({explanation.model_name || "Gemini"})
-                </span>
-              ) : (
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                  Deterministic Rule Briefing
-                </span>
-              )}
-            </div>
-
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              {explanation.summary}
-            </h2>
-
-            <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
-              {explanation.executive_brief}
-            </p>
-          </div>
-
-          {/* Circular Threat Gauge */}
-          <div className="flex-shrink-0">
-            <ThreatScoreGauge score={score} verdict={verdict} size={170} />
-          </div>
-        </div>
-
-        {/* Action Controls & Calibration Disclaimer */}
-        <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <div className="text-slate-500 italic max-w-lg text-center sm:text-left">
-            Notice: {uncertainty.calibration_disclosure}
+    <div className="space-y-6">
+      {/* 1. Primary Investigation Dossier Header */}
+      <section className="bg-[#ffffff] border border-[#cfccc2] shadow-sm">
+        {/* Dossier Bar */}
+        <div className="px-5 py-3 border-b border-[#e4e1d8] bg-[#faf9f5] flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono tracking-widest text-[#ea4e1b] uppercase font-bold">
+              [CASE DOSSIER]
+            </span>
+            <span className="text-xs font-mono font-bold text-[#121316]">
+              {case_id}
+            </span>
+            <span className="text-[10px] font-mono text-[#747782] hidden sm:inline">
+              // LOGGED: {timestamp ? new Date(timestamp).toLocaleTimeString() : "Just now"}
+            </span>
           </div>
 
           <div className="flex items-center gap-2">
+            {explanation.is_llm_generated ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono uppercase bg-[#f6f5f0] text-[#121316] border border-[#cfccc2]">
+                <Cpu className="w-3 h-3 text-[#ea4e1b]" />
+                <span>AI Grounded ({explanation.model_name || "Gemini"})</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono uppercase bg-[#f6f5f0] text-[#4d5058] border border-[#cfccc2]">
+                <Terminal className="w-3 h-3" />
+                <span>Deterministic Rule Briefing</span>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Executive Headline & Threat Index Grid */}
+        <div className="p-5 sm:p-6 flex flex-col lg:flex-row items-start justify-between gap-6">
+          <div className="flex-1 space-y-3">
+            <div className="text-[10px] font-mono tracking-widest text-[#747782] uppercase">
+              EXECUTIVE BRIEFING &amp; CLASSIFICATION
+            </div>
+            <h2 className="text-xl sm:text-2xl font-mono font-bold tracking-tight text-[#121316]">
+              {explanation.summary}
+            </h2>
+            <p className="text-xs sm:text-sm text-[#4d5058] leading-relaxed max-w-3xl font-sans">
+              {explanation.executive_brief}
+            </p>
+
+            {/* Key Concerns Bullet Summary */}
+            {explanation.key_concerns.length > 0 && (
+              <div className="pt-2">
+                <span className="text-[10px] font-mono tracking-wider text-[#747782] uppercase block mb-1">
+                  IDENTIFIED THREAT INDICATORS:
+                </span>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs font-mono text-[#121316]">
+                  {explanation.key_concerns.map((concern, idx) => (
+                    <li key={idx} className="flex items-start gap-1.5 bg-[#faf9f5] border border-[#e4e1d8] p-2">
+                      <span className="text-[#ea4e1b] font-bold">›</span>
+                      <span>{concern}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* Architectural Threat Score Index */}
+          <div className="w-full lg:w-auto shrink-0 flex justify-center">
+            <ThreatScoreGauge score={score} verdict={verdict} />
+          </div>
+        </div>
+
+        {/* Action Controls & Calibration Disclaimer Bar */}
+        <div className="px-5 py-3 border-t border-[#e4e1d8] bg-[#faf9f5] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono">
+          <div className="text-[11px] text-[#747782] leading-snug">
+            <strong className="text-[#4d5058]">CALIBRATION:</strong> {uncertainty.calibration_disclosure}
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={handleCopyMarkdown}
-              className="px-3 py-1.5 rounded-lg font-medium text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#ffffff] hover:bg-[#edebe4] text-[#121316] border border-[#cfccc2] transition-colors cursor-pointer text-xs uppercase"
             >
               {copiedMarkdown ? (
                 <>
-                  <span className="text-emerald-400 font-bold">✓</span>
-                  <span>Copied!</span>
+                  <Check className="w-3.5 h-3.5 text-[#177846]" />
+                  <span>COPIED (MD)</span>
                 </>
               ) : (
-                <span>Copy Summary (MD)</span>
+                <>
+                  <Copy className="w-3.5 h-3.5 text-[#747782]" />
+                  <span>COPY (MD)</span>
+                </>
               )}
             </button>
             <button
               onClick={handleDownloadJson}
-              className="px-3 py-1.5 rounded-lg font-medium text-xs bg-cyan-950/80 hover:bg-cyan-900/80 text-cyan-300 border border-cyan-800 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#ffffff] hover:bg-[#edebe4] text-[#121316] border border-[#cfccc2] transition-colors cursor-pointer text-xs uppercase"
             >
-              Export JSON Report
+              <Download className="w-3.5 h-3.5 text-[#747782]" />
+              <span>EXPORT JSON</span>
             </button>
             {onReset && (
               <button
                 onClick={onReset}
-                className="px-3 py-1.5 rounded-lg font-medium text-xs bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#ea4e1b] hover:bg-[#d54212] text-[#ffffff] border border-[#ea4e1b] transition-colors cursor-pointer text-xs uppercase font-bold"
               >
-                New Scan
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>NEW SCAN</span>
               </button>
             )}
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* 2. Manipulation Tactics Section */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/60 backdrop-blur-xl p-6 shadow-xl">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <span>Evidence-Backed Manipulation Tactics</span>
-              <span className="text-xs px-2 py-0.5 rounded-full font-mono bg-slate-800 text-slate-300">
-                {manipulation_tactics.length}
-              </span>
-            </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Psychological coercion techniques observed in communication patterns
-            </p>
+      {/* 2. Manipulation Tactics Breakdown */}
+      <section className="bg-[#ffffff] border border-[#cfccc2] shadow-sm">
+        <div className="px-5 py-3 border-b border-[#e4e1d8] bg-[#faf9f5] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-[#ea4e1b]" />
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#121316]">
+              Psychological Manipulation &amp; Social Engineering Tactics
+            </span>
           </div>
+          <span className="text-[10px] font-mono px-2 py-0.5 bg-[#f6f5f0] border border-[#cfccc2] text-[#4d5058] font-bold">
+            {manipulation_tactics.length} DETECTED
+          </span>
         </div>
 
-        {manipulation_tactics.length === 0 ? (
-          <div className="p-4 rounded-xl bg-slate-950/40 border border-slate-800/80 text-xs text-slate-400 text-center">
-            No active urgency, artificial deadlines, secrecy demands, or impersonation tactics detected.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-            {manipulation_tactics.map((tactic) => (
-              <div
-                key={tactic.tactic_id}
-                className="p-4 rounded-xl border border-slate-800/80 bg-slate-950/50 space-y-2 hover:border-slate-700 transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider font-mono text-cyan-400">
-                    {tactic.category.replace("_", " ")}
-                  </span>
-                  <span
-                    className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border ${getSeverityBadgeClass(
-                      tactic.severity
-                    )}`}
-                  >
-                    {tactic.severity}
-                  </span>
-                </div>
-
-                <h4 className="text-sm font-semibold text-white">{tactic.name}</h4>
-                <p className="text-xs text-slate-400">{tactic.description}</p>
-
-                {tactic.supporting_evidence && (
-                  <div className="mt-2 p-2 rounded bg-slate-900/80 border border-slate-800 text-xs font-mono text-amber-300">
-                    <span className="text-slate-500 mr-2">Evidence Excerpt:</span>
-                    &ldquo;{tactic.supporting_evidence}&rdquo;
+        <div className="p-5">
+          {manipulation_tactics.length === 0 ? (
+            <div className="p-4 bg-[#eff8f3] border border-[#9ed4b9] text-xs font-mono text-[#177846] flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>No active urgency, artificial deadlines, secrecy demands, or impersonation tactics detected.</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {manipulation_tactics.map((tactic) => (
+                <div
+                  key={tactic.tactic_id}
+                  className="p-4 border border-[#cfccc2] bg-[#faf9f5] space-y-2 hover:border-[#ea4e1b] transition-colors"
+                >
+                  <div className="flex items-center justify-between pb-1 border-b border-[#e4e1d8]">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#ea4e1b]">
+                      [{tactic.category.replace("_", " ")}]
+                    </span>
+                    <span
+                      className={`text-[9px] uppercase font-mono font-bold px-2 py-0.5 border ${getSeverityBadgeClass(
+                        tactic.severity
+                      )}`}
+                    >
+                      SEVERITY: {tactic.severity}
+                    </span>
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
 
-        <div className="mt-3 text-[11px] text-slate-500 italic">
-          Disclaimer: Manipulation indicators reflect psychological tactics and are not definitive proof of malicious intent by themselves.
+                  <h4 className="text-xs font-mono font-bold text-[#121316]">
+                    {tactic.name}
+                  </h4>
+                  <p className="text-xs text-[#4d5058] font-sans">
+                    {tactic.description}
+                  </p>
+
+                  {tactic.supporting_evidence && (
+                    <div className="mt-2 p-2 bg-[#ffffff] border border-[#cfccc2] text-xs font-mono text-[#121316]">
+                      <span className="text-[#747782] mr-2 text-[10px] uppercase font-bold">EXCERPT:</span>
+                      &ldquo;{tactic.supporting_evidence}&rdquo;
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <p className="text-[10px] font-mono text-[#747782] uppercase mt-3">
+            Passive heuristic evaluation • Indicators flag cognitive pressure patterns without accessing private records
+          </p>
         </div>
-      </div>
+      </section>
 
-      {/* 3. Forensic Evidence by Modality */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/60 backdrop-blur-xl p-6 shadow-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800/80 gap-3">
-          <div>
-            <h3 className="text-base font-bold text-white">
+      {/* 3. Forensic Evidence Register */}
+      <section className="bg-[#ffffff] border border-[#cfccc2] shadow-sm">
+        <div className="px-5 py-3 border-b border-[#e4e1d8] bg-[#faf9f5] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <FileSpreadsheet className="w-4 h-4 text-[#ea4e1b]" />
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#121316]">
               Forensic Evidence Register
-            </h3>
-            <p className="text-xs text-slate-400">
-              Normalized forensic signals categorized by originating modality
-            </p>
+            </span>
           </div>
 
           {/* Modality Filter Pills */}
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1 font-mono text-xs">
             <button
               onClick={() => setActiveModality("all")}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+              className={`px-2.5 py-1 text-[11px] uppercase transition-colors cursor-pointer ${
                 activeModality === "all"
-                  ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
-                  : "text-slate-400 hover:bg-slate-800"
+                  ? "bg-[#111215] text-[#f6f5f0] border border-[#111215] font-bold"
+                  : "bg-[#ffffff] text-[#4d5058] border border-[#cfccc2] hover:bg-[#edebe4]"
               }`}
             >
               All Signals ({all_evidence.length})
@@ -272,10 +332,10 @@ ${uncertainty.calibration_disclosure}
               <button
                 key={mod}
                 onClick={() => setActiveModality(mod)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium capitalize transition-colors ${
+                className={`px-2.5 py-1 text-[11px] uppercase transition-colors cursor-pointer ${
                   activeModality === mod
-                    ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
-                    : "text-slate-400 hover:bg-slate-800"
+                    ? "bg-[#111215] text-[#f6f5f0] border border-[#111215] font-bold"
+                    : "bg-[#ffffff] text-[#4d5058] border border-[#cfccc2] hover:bg-[#edebe4]"
                 }`}
               >
                 {mod} ({(evidence_by_modality[mod] || []).length})
@@ -284,39 +344,39 @@ ${uncertainty.calibration_disclosure}
           </div>
         </div>
 
-        <div className="mt-4 space-y-3">
+        <div className="p-5 space-y-3">
           {displayedEvidence.length === 0 ? (
-            <div className="p-4 rounded-xl bg-slate-950/40 border border-slate-800/80 text-xs text-slate-400 text-center">
-              No evidence recorded for the selected modality filter.
+            <div className="p-4 bg-[#faf9f5] border border-[#cfccc2] text-xs font-mono text-[#747782] text-center">
+              No evidence recorded for the active modality filter.
             </div>
           ) : (
             displayedEvidence.map((ev) => (
               <div
                 key={ev.evidence_id}
-                className="p-4 rounded-xl border border-slate-800/80 bg-slate-950/40 space-y-2 text-xs"
+                className="p-3.5 border border-[#cfccc2] bg-[#faf9f5] space-y-2 text-xs font-mono"
               >
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-1 border-b border-[#e4e1d8]">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-[10px] text-slate-500 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                    <span className="text-[10px] text-[#747782] bg-[#ffffff] px-1.5 py-0.5 border border-[#cfccc2]">
                       {ev.evidence_id}
                     </span>
-                    <span className="font-semibold text-slate-200 capitalize font-mono">
+                    <span className="font-bold text-[#121316] uppercase">
                       [{ev.source_modality}] {ev.indicator_type.replace("_", " ")}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-1.5">
                     <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
+                      className={`px-1.5 py-0.5 text-[9px] uppercase font-bold border ${
                         ev.observed_versus_inferred === "observed"
-                          ? "bg-blue-950/70 text-blue-300 border-blue-800"
-                          : "bg-purple-950/70 text-purple-300 border-purple-800"
+                          ? "bg-[#eff8f3] text-[#177846] border-[#9ed4b9]"
+                          : "bg-[#f1f3f5] text-[#525763] border-[#c4c8d3]"
                       }`}
                     >
                       {ev.observed_versus_inferred}
                     </span>
                     <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${getSeverityBadgeClass(
+                      className={`px-1.5 py-0.5 text-[9px] uppercase font-bold border ${getSeverityBadgeClass(
                         ev.severity
                       )}`}
                     >
@@ -325,25 +385,27 @@ ${uncertainty.calibration_disclosure}
                   </div>
                 </div>
 
-                <p className="text-slate-300">{ev.description}</p>
+                <p className="text-xs text-[#121316] font-sans">
+                  {ev.description}
+                </p>
 
                 {ev.supporting_excerpt && (
-                  <div className="p-2 rounded bg-slate-900/80 border border-slate-800 font-mono text-[11px] text-amber-200/90 break-all">
-                    <span className="text-slate-500 mr-2 font-sans">Supporting Value:</span>
+                  <div className="p-2 bg-[#ffffff] border border-[#cfccc2] text-[11px] text-[#ea4e1b] break-all">
+                    <span className="text-[#747782] mr-2 text-[10px] uppercase font-bold font-mono">SUPPORTING EXCERPT:</span>
                     {ev.supporting_excerpt}
                   </div>
                 )}
 
-                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 pt-1">
-                  <span>Source: {ev.evidence_source}</span>
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-[#747782] pt-1">
+                  <span>SOURCE: {ev.evidence_source}</span>
                   {ev.confidence !== null && (
-                    <span>Confidence: {(ev.confidence * 100).toFixed(1)}%</span>
+                    <span className="tabular-nums">CONFIDENCE: {(ev.confidence * 100).toFixed(1)}%</span>
                   )}
                 </div>
 
                 {ev.limitations_and_missing_checks.length > 0 && (
-                  <div className="pt-1.5 border-t border-slate-900 text-[11px] text-slate-500">
-                    <span className="text-slate-400 font-semibold mr-1">Limitations:</span>
+                  <div className="pt-1.5 border-t border-[#e4e1d8] text-[10px] text-[#747782]">
+                    <span className="text-[#4d5058] font-semibold mr-1">LIMITATIONS:</span>
                     {ev.limitations_and_missing_checks.join("; ")}
                   </div>
                 )}
@@ -351,127 +413,138 @@ ${uncertainty.calibration_disclosure}
             ))
           )}
         </div>
-      </div>
+      </section>
 
-      {/* 4. Model Telemetry & Deterministic Scoring Breakdown */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/60 backdrop-blur-xl p-6 shadow-xl">
-        <h3 className="text-base font-bold text-white mb-1">
-          Technical Signals &amp; Deterministic Weight Allocation
-        </h3>
-        <p className="text-xs text-slate-400 mb-4">
-          Exact scoring attribution across Model A (SMS), Model B (PhiUSIIL), and manipulation tactics
-        </p>
+      {/* 4. Technical Telemetry & Weight Allocation */}
+      <section className="bg-[#ffffff] border border-[#cfccc2] shadow-sm">
+        <div className="px-5 py-3 border-b border-[#e4e1d8] bg-[#faf9f5]">
+          <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#121316]">
+            Technical Telemetry &amp; Deterministic Scoring Attribution
+          </span>
+          <p className="text-[10px] font-mono text-[#747782]">
+            Exact point contribution breakdown across Model A, Model B, and manipulation tactics
+          </p>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
+        <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
           {/* Model A Box */}
-          <div className="p-4 rounded-xl bg-slate-950/50 border border-slate-800/80 space-y-1.5">
-            <span className="text-cyan-400 font-bold block uppercase text-[11px]">
-              Model A: SMS Spam Classifier
+          <div className="p-3.5 border border-[#cfccc2] bg-[#faf9f5] space-y-1">
+            <span className="text-[10px] font-bold text-[#ea4e1b] uppercase block">
+              MODEL A: SMS CLASSIFIER
             </span>
-            <div className="text-slate-300">
-              Active: {model_signals.model_a_sms_classifier?.active ? "Yes" : "No"}
+            <div className="text-[#4d5058]">
+              ACTIVE: {model_signals.model_a_sms_classifier?.active ? "TRUE" : "FALSE"}
             </div>
-            <div className="text-slate-300">
-              Spam Probability:{" "}
+            <div className="text-[#4d5058] tabular-nums">
+              SPAM PROBABILITY:{" "}
               {model_signals.model_a_sms_classifier?.spam_probability !== null &&
               model_signals.model_a_sms_classifier?.spam_probability !== undefined
                 ? `${(model_signals.model_a_sms_classifier.spam_probability * 100).toFixed(1)}%`
                 : "N/A"}
             </div>
-            <div className="text-slate-300 font-bold">
-              Score Points:{" "}
-              <span className="text-emerald-400">
-                +{model_signals.model_a_sms_classifier?.points_contributed || 0} pts
+            <div className="text-[#121316] font-bold pt-1 border-t border-[#e4e1d8]">
+              SCORE POINTS:{" "}
+              <span className="text-[#177846] tabular-nums">
+                +{model_signals.model_a_sms_classifier?.points_contributed || 0} PTS
               </span>{" "}
-              (max 35)
+              (MAX 35)
             </div>
           </div>
 
           {/* Model B Box */}
-          <div className="p-4 rounded-xl bg-slate-950/50 border border-slate-800/80 space-y-1.5">
-            <span className="text-cyan-400 font-bold block uppercase text-[11px]">
-              Model B: PhiUSIIL URL Classifier
+          <div className="p-3.5 border border-[#cfccc2] bg-[#faf9f5] space-y-1">
+            <span className="text-[10px] font-bold text-[#ea4e1b] uppercase block">
+              MODEL B: PHIUSIIL URL CLASSIFIER
             </span>
-            <div className="text-slate-300">
-              Scanned URLs: {model_signals.model_b_url_classifier?.urls_scanned_count || 0}
+            <div className="text-[#4d5058] tabular-nums">
+              SCANNED URLS: {model_signals.model_b_url_classifier?.urls_scanned_count || 0}
             </div>
-            <div className="text-slate-300">
-              Phishing Flagged:{" "}
+            <div className="text-[#4d5058]">
+              PHISHING DETECTED:{" "}
               {model_signals.model_b_url_classifier?.any_phishing ? (
-                <span className="text-rose-400 font-bold">Yes</span>
+                <span className="text-[#ea4e1b] font-bold">YES</span>
               ) : (
-                "No"
+                "NO"
               )}
             </div>
-            <div className="text-slate-300 font-bold">
-              Score Points:{" "}
-              <span className="text-emerald-400">
-                +{model_signals.model_b_url_classifier?.points_contributed || 0} pts
+            <div className="text-[#121316] font-bold pt-1 border-t border-[#e4e1d8]">
+              SCORE POINTS:{" "}
+              <span className="text-[#177846] tabular-nums">
+                +{model_signals.model_b_url_classifier?.points_contributed || 0} PTS
               </span>{" "}
-              (max 45)
+              (MAX 45)
             </div>
           </div>
 
           {/* Heuristics & Dampening Box */}
-          <div className="p-4 rounded-xl bg-slate-950/50 border border-slate-800/80 space-y-1.5">
-            <span className="text-cyan-400 font-bold block uppercase text-[11px]">
-              Heuristics &amp; Correlation Dampening
+          <div className="p-3.5 border border-[#cfccc2] bg-[#faf9f5] space-y-1">
+            <span className="text-[10px] font-bold text-[#ea4e1b] uppercase block">
+              TACTICS &amp; CORRELATION DAMPENING
             </span>
-            <div className="text-slate-300">
-              Categories:{" "}
-              {model_signals.heuristics_and_tactics?.categories_detected?.join(", ") || "None"}
+            <div className="text-[#4d5058] truncate">
+              CATEGORIES:{" "}
+              {model_signals.heuristics_and_tactics?.categories_detected?.join(", ") || "NONE"}
             </div>
-            <div className="text-slate-300">
-              Correlation Discount:{" "}
-              <span className="text-amber-400">
-                -{model_signals.heuristics_and_tactics?.correlation_dampening_applied || 0} pts
+            <div className="text-[#4d5058] tabular-nums">
+              CORRELATION DISCOUNT:{" "}
+              <span className="text-[#b45309]">
+                -{model_signals.heuristics_and_tactics?.correlation_dampening_applied || 0} PTS
               </span>
             </div>
-            <div className="text-slate-300 font-bold">
-              Capped Tactic Points:{" "}
-              <span className="text-emerald-400">
-                +{model_signals.heuristics_and_tactics?.capped_tactic_points || 0} pts
+            <div className="text-[#121316] font-bold pt-1 border-t border-[#e4e1d8]">
+              CAPPED POINTS:{" "}
+              <span className="text-[#177846] tabular-nums">
+                +{model_signals.heuristics_and_tactics?.capped_tactic_points || 0} PTS
               </span>{" "}
-              (max 35)
+              (MAX 35)
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* 5. Uncertainty & Missing Checks */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Missing Checks */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 backdrop-blur-xl p-5 shadow-xl space-y-2">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">
-            Explicitly Omitted Verifications
-          </h4>
-          <p className="text-[11px] text-slate-500">
-            For safety and privacy, PhishLens AI strictly adheres to passive evaluation
+      {/* 5. Uncertainty & Operational Playbook Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* Missing Checks & Passive Evaluation Limits */}
+        <section className="bg-[#ffffff] border border-[#cfccc2] p-5 shadow-sm space-y-2">
+          <div className="flex items-center gap-1.5 pb-2 border-b border-[#e4e1d8]">
+            <Info className="w-4 h-4 text-[#747782]" />
+            <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-[#121316]">
+              Explicitly Omitted Verifications
+            </h4>
+          </div>
+          <p className="text-[11px] font-mono text-[#747782]">
+            Passive triage limits: no server visits or external queries
           </p>
-          <ul className="space-y-1.5 pt-2 text-xs text-slate-400 list-disc list-inside">
+          <ul className="space-y-1.5 pt-2 text-xs font-mono text-[#4d5058]">
             {missing_checks.map((chk, i) => (
-              <li key={i}>{chk}</li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Safe Next Steps */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 backdrop-blur-xl p-5 shadow-xl space-y-2">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-            Prescriptive Action Playbook
-          </h4>
-          <p className="text-[11px] text-slate-500">
-            Recommended response procedures for employees and security analysts
-          </p>
-          <ul className="space-y-2 pt-2 text-xs text-slate-200">
-            {safe_next_steps.map((step, idx) => (
-              <li key={idx} className="flex items-start gap-2">
-                <span className="text-emerald-400 font-bold">✓</span>
-                <span>{step}</span>
+              <li key={i} className="flex items-start gap-1.5">
+                <span className="text-[#747782] font-bold">•</span>
+                <span>{chk}</span>
               </li>
             ))}
           </ul>
-        </div>
+        </section>
+
+        {/* Prescriptive Safe Next Actions */}
+        <section className="bg-[#ffffff] border border-[#cfccc2] p-5 shadow-sm space-y-2">
+          <div className="flex items-center gap-1.5 pb-2 border-b border-[#e4e1d8]">
+            <CheckCircle2 className="w-4 h-4 text-[#177846]" />
+            <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-[#177846]">
+              Prescriptive Security Playbook
+            </h4>
+          </div>
+          <p className="text-[11px] font-mono text-[#747782]">
+            Standard incident response playbook recommendations
+          </p>
+          <ul className="space-y-2 pt-2 text-xs font-mono text-[#121316]">
+            {safe_next_steps.map((step, idx) => (
+              <li key={idx} className="flex items-start gap-2 bg-[#eff8f3] border border-[#9ed4b9] p-2">
+                <Check className="w-3.5 h-3.5 text-[#177846] shrink-0 mt-0.5" />
+                <span className="font-medium">{step}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
     </div>
   );
