@@ -117,8 +117,53 @@ export interface UnifiedScanPayload {
   include_explanation?: boolean;
 }
 
-const rawApiUrl = (process.env.NEXT_PUBLIC_API_URL || "").trim();
-export const API_BASE_URL = (rawApiUrl || "http://localhost:8000").replace(/\/+$/, "");
+export interface ThreatIndicator {
+  indicator_type: string;
+  name: string;
+  severity: "low" | "medium" | "high" | "critical";
+  description: string;
+  evidence: string | null;
+}
+
+export interface URLScanResponse {
+  url: string;
+  is_phishing: boolean;
+  confidence: number;
+  label: string;
+  phishing_probability: number;
+  risk_score: number;
+  severity: string;
+  extracted_features: Record<string, unknown>;
+  threat_indicators: ThreatIndicator[];
+  explanation: StructuredExplanation | null;
+}
+
+export interface URLScanPayload {
+  url: string;
+  include_explanation?: boolean;
+}
+
+/**
+ * Resolves the API base URL safely across environments.
+ *
+ * In production browser environments, relative same-origin URLs ("") are strictly enforced
+ * so browser requests route through the Next.js same-origin proxy, preventing accidental
+ * proxy bypass and cross-site third-party cookie blocking.
+ */
+export function resolveApiBaseUrl(
+  rawEnvUrl?: string,
+  isProduction: boolean = process.env.NODE_ENV === "production",
+  isBrowser: boolean = typeof window !== "undefined"
+): string {
+  if (isProduction && isBrowser) {
+    return "";
+  }
+  const trimmed = (rawEnvUrl || "").trim().replace(/\/+$/, "");
+  return trimmed || "";
+}
+
+export const API_BASE_URL = resolveApiBaseUrl(process.env.NEXT_PUBLIC_API_URL);
+
 
 const DEFAULT_TIMEOUT_MS = 20000;
 const HEALTH_TIMEOUT_MS = 25000;
@@ -227,6 +272,47 @@ export async function investigateMultimodal(
       throw new Error("Request timed out during multimodal processing.");
     }
     const msg = err instanceof Error ? err.message : "Multimodal analysis failed";
+    throw new Error(msg);
+  }
+}
+
+/**
+ * Direct URL scan with optional explanation
+ */
+export async function scanUrl(
+  payload: URLScanPayload,
+  timeoutMs = DEFAULT_TIMEOUT_MS
+): Promise<URLScanResponse> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/v1/scan/url`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    clearTimeout(id);
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => null);
+      const message =
+        errData?.error?.message ||
+        `URL scan failed with HTTP ${res.status}`;
+      throw new Error(message);
+    }
+
+    return await res.json();
+  } catch (err: unknown) {
+    clearTimeout(id);
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error("Request timed out during URL analysis.");
+    }
+    const msg = err instanceof Error ? err.message : "URL scan failed";
     throw new Error(msg);
   }
 }

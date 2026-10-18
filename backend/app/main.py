@@ -45,6 +45,7 @@ def create_application() -> FastAPI:
         allow_credentials=True,
         allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["Content-Type", "Authorization", "X-Request-ID", "x-test-stt-engine", "Accept"],
+        expose_headers=["X-Request-ID"],
     )
 
     # Exception Handlers

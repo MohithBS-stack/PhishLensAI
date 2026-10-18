@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   fetchHealth,
   scanUnified,
@@ -10,7 +10,10 @@ import {
   UnifiedScanPayload,
   API_BASE_URL,
 } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
+import { saveCaseApi } from "@/lib/cases";
 import { Navbar } from "@/components/Navbar";
+import { AuthModal, AuthMode } from "@/components/AuthModal";
 import { InvestigationForm } from "@/components/InvestigationForm";
 import { ReportDashboard } from "@/components/ReportDashboard";
 import { SessionHistory } from "@/components/SessionHistory";
@@ -31,12 +34,32 @@ import {
 const SESSION_STORAGE_KEY = "phishlens_local_session_history";
 
 export default function Home() {
+  const { user, accessToken } = useAuth();
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [loadingHealth, setLoadingHealth] = useState<boolean>(true);
   const [currentReport, setCurrentReport] = useState<UnifiedReportResponse | null>(null);
   const [history, setHistory] = useState<UnifiedReportResponse[]>([]);
   const [loadingScan, setLoadingScan] = useState<boolean>(false);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [authModalMode, setAuthModalMode] = useState<AuthMode>("login");
+
+  // Persistent database case saving states
+  const [isSavedToDb, setIsSavedToDb] = useState<boolean>(false);
+  const [isSavingToDb, setIsSavingToDb] = useState<boolean>(false);
+  const [saveToDbError, setSaveToDbError] = useState<string | null>(null);
+  const [casesRefreshTrigger, setCasesRefreshTrigger] = useState<number>(0);
+
+  // User switch or logout isolation: flush active report when account changes
+  const prevUserIdRef = useRef<string | null>(user?.id || null);
+  useEffect(() => {
+    if (prevUserIdRef.current && prevUserIdRef.current !== (user?.id || null)) {
+      setCurrentReport(null);
+      setIsSavedToDb(false);
+      setSaveToDbError(null);
+    }
+    prevUserIdRef.current = user?.id || null;
+  }, [user?.id]);
 
   // Manual health check trigger with overlap protection
   const checkHealth = (retriesLeft = 0, delayMs = 3000) => {
@@ -127,15 +150,71 @@ export default function Home() {
     }
   };
 
+  const autoSaveCaseIfAuthenticated = async (report: UnifiedReportResponse, invType: string) => {
+    if (!user || !accessToken) {
+      setIsSavedToDb(false);
+      setSaveToDbError(null);
+      return;
+    }
+    setIsSavingToDb(true);
+    setSaveToDbError(null);
+    try {
+      await saveCaseApi(
+        {
+          case_id: report.case_id,
+          investigation_type: invType,
+          report_payload: report,
+        },
+        accessToken
+      );
+      setIsSavedToDb(true);
+      setCasesRefreshTrigger((prev) => prev + 1);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to persist report to database";
+      console.warn("[PhishLens] Auto-save case error:", msg);
+      setSaveToDbError(msg);
+      setIsSavedToDb(false);
+    } finally {
+      setIsSavingToDb(false);
+    }
+  };
+
+  const handleManualSaveCase = async () => {
+    if (!currentReport || !user || !accessToken || isSavedToDb || isSavingToDb) return;
+    setIsSavingToDb(true);
+    setSaveToDbError(null);
+    try {
+      await saveCaseApi(
+        {
+          case_id: currentReport.case_id,
+          investigation_type: "unified",
+          report_payload: currentReport,
+        },
+        accessToken
+      );
+      setIsSavedToDb(true);
+      setCasesRefreshTrigger((prev) => prev + 1);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to save dossier to database";
+      setSaveToDbError(msg);
+      setIsSavedToDb(false);
+    } finally {
+      setIsSavingToDb(false);
+    }
+  };
+
   // Run JSON investigation
   const handleScanJson = async (payload: UnifiedScanPayload) => {
     setLoadingScan(true);
     setScanError(null);
+    setIsSavedToDb(false);
+    setSaveToDbError(null);
     try {
       const report = await scanUnified(payload);
       setCurrentReport(report);
       saveToHistory(report);
       if (!health) checkHealth(0);
+      await autoSaveCaseIfAuthenticated(report, "unified");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Investigation failed";
       setScanError(msg);
@@ -148,11 +227,14 @@ export default function Home() {
   const handleScanMultimodal = async (formData: FormData) => {
     setLoadingScan(true);
     setScanError(null);
+    setIsSavedToDb(false);
+    setSaveToDbError(null);
     try {
       const report = await investigateMultimodal(formData);
       setCurrentReport(report);
       saveToHistory(report);
       if (!health) checkHealth(0);
+      await autoSaveCaseIfAuthenticated(report, "multimodal");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Multimodal analysis failed";
       setScanError(msg);
@@ -169,6 +251,10 @@ export default function Home() {
         loadingHealth={loadingHealth}
         onRefreshHealth={() => checkHealth(0)}
         onNewScan={currentReport ? () => setCurrentReport(null) : undefined}
+        onOpenAuth={(mode) => {
+          setAuthModalMode(mode || "login");
+          setIsAuthModalOpen(true);
+        }}
       />
 
       {/* Main Investigation Workspace */}
@@ -177,13 +263,19 @@ export default function Home() {
         <section className="bg-[#ffffff] border border-[#cfccc2] p-6 sm:p-8 shadow-sm">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-[#e4e1d8]">
             <div className="space-y-2 max-w-3xl">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] font-mono tracking-widest text-[#ea4e1b] uppercase font-bold bg-[#fdf3ef] px-2 py-0.5 border border-[#f8ab93]">
                   OPERATIONAL SPECIFICATION v1.0
                 </span>
                 <span className="text-[10px] font-mono tracking-wider text-[#747782] uppercase">
                   CYBERSECURITY FORENSIC ENGINE
                 </span>
+                {user && (
+                  <span className="text-[10px] font-mono tracking-wider text-[#185a30] uppercase font-bold bg-[#e8f6ed] px-2 py-0.5 border border-[#a8dfba] flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#1b7e41]" />
+                    <span>OPERATOR: {user.email}</span>
+                  </span>
+                )}
               </div>
               <h1 className="text-2xl sm:text-4xl font-mono font-extrabold tracking-tight text-[#121316]">
                 Multimodal Threat Investigation &amp; Evidence Fusion
@@ -297,7 +389,20 @@ export default function Home() {
           <div className="scroll-mt-20">
             <ReportDashboard
               report={currentReport}
-              onReset={() => setCurrentReport(null)}
+              onReset={() => {
+                setCurrentReport(null);
+                setIsSavedToDb(false);
+                setSaveToDbError(null);
+              }}
+              isSavedToDb={isSavedToDb}
+              isSavingToDb={isSavingToDb}
+              saveToDbError={saveToDbError}
+              onSaveToDb={handleManualSaveCase}
+              onOpenAuth={(mode) => {
+                setAuthModalMode(mode || "login");
+                setIsAuthModalOpen(true);
+              }}
+              isAuthenticated={Boolean(user && accessToken)}
             />
           </div>
         )}
@@ -307,10 +412,17 @@ export default function Home() {
           history={history}
           onSelectCase={(caseItem) => {
             setCurrentReport(caseItem);
+            setIsSavedToDb(Boolean(user && accessToken));
+            setSaveToDbError(null);
             window.scrollTo({ top: 400, behavior: "smooth" });
           }}
           onClearHistory={handleClearHistory}
           currentCaseId={currentReport?.case_id}
+          onOpenAuth={(mode) => {
+            setAuthModalMode(mode || "login");
+            setIsAuthModalOpen(true);
+          }}
+          refreshTrigger={casesRefreshTrigger}
         />
       </main>
 
@@ -331,6 +443,13 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Operator Authentication & Registration Modal Dialog */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authModalMode}
+      />
     </div>
   );
 }

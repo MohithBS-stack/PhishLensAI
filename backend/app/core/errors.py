@@ -78,6 +78,9 @@ def build_error_payload(
 async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
     """Handles custom AppException instances."""
     request_id = getattr(request.state, "request_id", None)
+    headers = {}
+    if exc.status_code == 429 and "retry_after" in exc.details:
+        headers["Retry-After"] = str(exc.details["retry_after"])
     return JSONResponse(
         status_code=exc.status_code,
         content=build_error_payload(
@@ -87,7 +90,12 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
             details=exc.details,
             request_id=request_id,
         ),
+        headers=headers,
     )
+
+
+
+from fastapi.encoders import jsonable_encoder
 
 
 async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
@@ -99,7 +107,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             code="REQUEST_VALIDATION_ERROR",
             message="Invalid request payload or parameters.",
             status_code=422,
-            details={"errors": exc.errors()},
+            details={"errors": jsonable_encoder(exc.errors())},
             request_id=request_id,
         ),
     )

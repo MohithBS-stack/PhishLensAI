@@ -4,6 +4,7 @@
 .env.*.local
 *.env
 !.env.example
+!**/.env.example
 
 # Python
 __pycache__/
@@ -15,6 +16,9 @@ __pycache__/
 .ruff_cache/
 .coverage
 htmlcov/
+*.db
+*.sqlite*
+
 
 # Virtual Environments
 venv/
