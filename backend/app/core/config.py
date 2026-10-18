@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     """PhishLens AI runtime configuration via Pydantic."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(".env", ".env.local"),
         env_file_encoding="utf-8",
         extra="ignore",
         case_sensitive=False,

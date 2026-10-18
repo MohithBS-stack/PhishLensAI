@@ -445,6 +445,47 @@ def test_production_configuration_safety():
     assert prod_settings.resolved_cookie_samesite == "none"
 
 
+def test_env_file_and_env_local_precedence_and_overrides(tmp_path, monkeypatch):
+    """Verify that Settings loads .env and .env.local with correct precedence,
+    where .env.local overrides .env, and real process environment variables retain highest priority."""
+    from app.core.config import Settings
+
+    env_file = tmp_path / ".env"
+    env_local_file = tmp_path / ".env.local"
+
+    # 1. Base .env defines values
+    env_file.write_text("PROJECT_NAME=BaseProject\nAPI_V1_PREFIX=/api/v1\nPORT=8000\n", encoding="utf-8")
+    # 2. .env.local overrides PROJECT_NAME and PORT
+    env_local_file.write_text("PROJECT_NAME=LocalOverrideProject\nPORT=9000\n", encoding="utf-8")
+
+    # Clear any conflicting process environment variables
+    monkeypatch.delenv("PROJECT_NAME", raising=False)
+    monkeypatch.delenv("PORT", raising=False)
+    monkeypatch.delenv("API_V1_PREFIX", raising=False)
+
+    # Initialize Settings with the custom tuple
+    s = Settings(_env_file=(str(env_file), str(env_local_file)))
+    assert s.PROJECT_NAME == "LocalOverrideProject"
+    assert s.PORT == 9000
+    assert s.API_V1_PREFIX == "/api/v1"
+
+    # 3. Real process environment variables retain higher priority over both .env and .env.local
+    monkeypatch.setenv("PROJECT_NAME", "ProcessEnvPriorityProject")
+    monkeypatch.setenv("PORT", "9999")
+    s_proc = Settings(_env_file=(str(env_file), str(env_local_file)))
+    assert s_proc.PROJECT_NAME == "ProcessEnvPriorityProject"
+    assert s_proc.PORT == 9999
+    assert s_proc.API_V1_PREFIX == "/api/v1"
+
+    # 4. Graceful fallback when .env.local is absent
+    env_local_file.unlink()
+    monkeypatch.delenv("PROJECT_NAME", raising=False)
+    monkeypatch.delenv("PORT", raising=False)
+    s_no_local = Settings(_env_file=(str(env_file), str(env_local_file)))
+    assert s_no_local.PROJECT_NAME == "BaseProject"
+    assert s_no_local.PORT == 8000
+
+
 def test_guid_type_postgresql_and_sqlite_compatibility():
     """Verify platform-independent GUID type binds UUID objects for PostgreSQL and strings for SQLite."""
     import uuid
