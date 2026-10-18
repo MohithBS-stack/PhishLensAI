@@ -367,6 +367,9 @@ async def refresh_token(
         expires_at=new_session_expiry,
     )
     db.add(new_session)
+    # Explicitly flush new_session so PostgreSQL receives the INSERT before
+    # updating the predecessor's self-referential foreign key replaced_by_session_id
+    await db.flush()
 
     # Mark old session as replaced and revoked
     session.revoked_at = now

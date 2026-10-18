@@ -196,6 +196,9 @@ async def test_pg_refresh_token_rotation_and_revocation(pg_session: AsyncSession
         expires_at=datetime.now(timezone.utc) + timedelta(days=30),
     )
     pg_session.add(session_b)
+    # Explicitly flush replacement session so PostgreSQL receives the INSERT before
+    # updating predecessor's self-referential foreign key replaced_by_session_id
+    await pg_session.flush()
 
     locked_session.revoked_at = datetime.now(timezone.utc)
     locked_session.replaced_by_session_id = session_b.id

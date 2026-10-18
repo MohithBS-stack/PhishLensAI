@@ -705,3 +705,77 @@ async def test_client_ip_does_not_trust_unconfigured_forwarded_for(client: Async
     )
     assert blocked.status_code == 429
     assert blocked.json()["error"]["code"] == "RATE_LIMIT_EXCEEDED"
+
+
+@pytest.mark.asyncio
+async def test_refresh_session_flush_ordering_and_rollback_atomicity(test_db_session: AsyncSession):
+    """Verify that rotation persists replacement session before predecessor references it,
+    and rollback preserves atomicity without leaving a partially rotated session."""
+    import uuid
+    user = User(
+        id=uuid.uuid4(),
+        email="atomicity_test@phishlens.internal",
+        hashed_password=hash_password("Password123!"),
+    )
+    test_db_session.add(user)
+    await test_db_session.commit()
+
+    # Create initial session
+    s1 = RefreshSession(
+        id=uuid.uuid4(),
+        user_id=user.id,
+        token_hash=hash_token("token_1"),
+        expires_at=datetime.now(timezone.utc) + timedelta(days=30),
+    )
+    test_db_session.add(s1)
+    await test_db_session.commit()
+
+    # 1. Successful rotation with explicit flush ordering
+    s2 = RefreshSession(
+        id=uuid.uuid4(),
+        user_id=user.id,
+        token_hash=hash_token("token_2"),
+        expires_at=datetime.now(timezone.utc) + timedelta(days=30),
+    )
+    test_db_session.add(s2)
+    await test_db_session.flush()
+
+    s1.revoked_at = datetime.now(timezone.utc)
+    s1.replaced_by_session_id = s2.id
+    await test_db_session.commit()
+
+    await test_db_session.refresh(s1)
+    await test_db_session.refresh(s2)
+    assert s1.replaced_by_session_id == s2.id
+    assert s1.is_active is False
+    assert s2.is_active is True
+
+    # 2. Simulated failure after flush - rollback must not leave partial rotation
+    s3 = RefreshSession(
+        id=uuid.uuid4(),
+        user_id=user.id,
+        token_hash=hash_token("token_3"),
+        expires_at=datetime.now(timezone.utc) + timedelta(days=30),
+    )
+    test_db_session.add(s3)
+    await test_db_session.flush()
+
+    s2.revoked_at = datetime.now(timezone.utc)
+    s2.replaced_by_session_id = s3.id
+
+    s2_id = s2.id
+    s3_id = s3.id
+
+    # Simulate transaction rollback (e.g. failure before commit)
+    await test_db_session.rollback()
+
+    # Query back states
+    res_s2 = (await test_db_session.execute(select(RefreshSession).where(RefreshSession.id == s2_id))).scalar_one()
+    res_s3 = (await test_db_session.execute(select(RefreshSession).where(RefreshSession.id == s3_id))).scalar_one_or_none()
+
+    # s3 should not exist in DB
+    assert res_s3 is None
+    # s2 should remain active and unrevoked, not replaced by s3
+    assert res_s2.replaced_by_session_id is None
+    assert res_s2.revoked_at is None
+    assert res_s2.is_active is True
