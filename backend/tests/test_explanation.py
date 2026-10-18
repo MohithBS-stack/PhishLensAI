@@ -20,6 +20,7 @@ from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.core.config import settings
 from app.services.explanation_service import explanation_service
 from app.schemas.evidence import ManipulationTactic, NormalizedEvidence
 from app.services.unified_scanner import unified_scanner_service
@@ -87,6 +88,15 @@ async def test_gemini_explanation_success():
             assert "HIGH-RISK" in explanation.summary
             assert len(explanation.key_concerns) == 2
             assert len(explanation.remediation_advice) == 2
+
+            # Verify thinking_config with thinking_budget=0 was passed
+            call_kwargs = mock_client.models.generate_content.call_args.kwargs
+            assert "config" in call_kwargs
+            config_arg = call_kwargs["config"]
+            assert config_arg.thinking_config is not None
+            assert config_arg.thinking_config.thinking_budget == 0
+            assert config_arg.max_output_tokens == 800
+            assert config_arg.response_mime_type == "application/json"
 
 
 @pytest.mark.asyncio
@@ -317,3 +327,32 @@ def test_unified_url_explanation():
     assert data["explanation"] is not None
     assert data["explanation"]["is_llm_generated"] is False  # Fallback engaged when no GEMINI_API_KEY set
     assert "Deterministic Rule-Grounded Generator" in data["explanation"]["model_name"]
+
+
+def test_gemini_timeout_configuration_and_settings():
+    """Validates that LLM_TIMEOUT_SECONDS defaults to 12.0s."""
+    assert settings.LLM_TIMEOUT_SECONDS == 12.0
+
+
+@pytest.mark.asyncio
+async def test_gemini_thinking_budget_zero_and_timeout_fallback():
+    """Validates that thinking_budget=0 is configured and timeouts trigger deterministic fallback."""
+    import asyncio
+
+    async def slow_mock_generate(*args, **kwargs):
+        await asyncio.sleep(0.2)
+        return MagicMock()
+
+    with patch.object(explanation_service, "_get_api_key", return_value="test-key"):
+        with patch.object(explanation_service, "_call_gemini_llm", side_effect=slow_mock_generate):
+            with patch.object(settings, "LLM_TIMEOUT_SECONDS", 0.05):
+                explanation = await explanation_service.generate_explanation(
+                    verdict="suspicious",
+                    score=45.0,
+                    tactics=[],
+                    evidence_items=[],
+                    safe_next_steps=["Verify source"],
+                    untrusted_text="Suspicious text",
+                )
+                assert explanation.is_llm_generated is False
+                assert explanation.model_name == "Deterministic Rule-Grounded Generator"

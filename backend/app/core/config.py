@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: Optional[str] = None
     GEMINI_MODEL: str = "gemini-2.5-flash"
     ENABLE_LLM_EXPLANATION: bool = True
-    LLM_TIMEOUT_SECONDS: float = 5.0
+    LLM_TIMEOUT_SECONDS: float = 12.0
     RISK_THRESHOLD_HIGH: float = 70.0
     RISK_THRESHOLD_SUSPICIOUS: float = 30.0
 

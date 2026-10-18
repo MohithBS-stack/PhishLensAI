@@ -227,6 +227,7 @@ Return a JSON object with EXACTLY these keys:
                 response_mime_type="application/json",
                 temperature=0.1,
                 max_output_tokens=800,
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
             ),
         )
 
