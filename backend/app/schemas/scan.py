@@ -2,6 +2,7 @@
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 from app.ml.inference import MessagePredictionResult, URLPredictionResult
+from app.schemas.evidence import StructuredExplanation
 
 
 class ThreatIndicator(BaseModel):
@@ -34,11 +35,33 @@ class MessageAnalysisReport(BaseModel):
     threat_indicators: List[ThreatIndicator] = Field(default_factory=list)
     extracted_urls: List[str] = Field(default_factory=list, description="Extracted URLs (analyzed passively)")
     url_evaluations: List[URLScanSummary] = Field(default_factory=list)
+    explanation: Optional[StructuredExplanation] = Field(default=None, description="Optional evidence-grounded threat explanation")
 
 
 class TextScanRequest(BaseModel):
     """Request payload for direct text/SMS scanning."""
     text: str = Field(..., min_length=1, max_length=10000, description="Message text to analyze")
+    include_explanation: bool = Field(default=False, description="Whether to include structured threat explanation")
+
+
+class URLScanRequest(BaseModel):
+    """Request payload for direct URL scanning."""
+    url: str = Field(..., min_length=1, max_length=2048, description="URL string to analyze passively")
+    include_explanation: bool = Field(default=True, description="Whether to include structured threat explanation")
+
+
+class URLScanResponse(BaseModel):
+    """Direct URL scanning response with passive evaluation and optional explanation."""
+    url: str
+    is_phishing: bool
+    confidence: float
+    label: str
+    phishing_probability: float
+    risk_score: float
+    severity: str
+    extracted_features: Dict[str, Any]
+    threat_indicators: List[ThreatIndicator] = Field(default_factory=list)
+    explanation: Optional[StructuredExplanation] = Field(default=None, description="Optional evidence-grounded threat explanation")
 
 
 class ScreenshotAnalysisResponse(BaseModel):
