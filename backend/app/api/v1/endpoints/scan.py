@@ -5,12 +5,19 @@ from typing import Optional
 from app.schemas.scan import (
     TextScanRequest,
     MessageAnalysisReport,
+    URLScanRequest,
+    URLScanResponse,
+    ThreatIndicator,
     ScreenshotAnalysisResponse,
     AudioAnalysisResponse,
 )
 from app.services.message_analysis import message_analysis_service
 from app.services.ocr_service import ocr_service
 from app.services.audio_service import audio_service
+from app.services.explanation_service import explanation_service
+from app.schemas.evidence import NormalizedEvidence
+from app.ml.inference import inference_engine
+import uuid
 
 router = APIRouter(prefix="/scan", tags=["Scanning & Threat Analysis"])
 
@@ -23,8 +30,142 @@ router = APIRouter(prefix="/scan", tags=["Scanning & Threat Analysis"])
     description="Analyzes message text for spam/smishing patterns, passively extracts embedded URLs, and scores overall threat severity.",
 )
 async def scan_text(payload: TextScanRequest) -> MessageAnalysisReport:
-    """Performs unified text threat analysis."""
-    return message_analysis_service.analyze_message(payload.text)
+    """Performs unified text threat analysis with optional explanation."""
+    report = message_analysis_service.analyze_message(payload.text)
+    if payload.include_explanation:
+        verdict = (
+            "high-risk"
+            if report.severity in ("critical", "high")
+            else ("suspicious" if report.severity == "medium" else "benign")
+        )
+        evidence_items = []
+        for ind in report.threat_indicators:
+            evidence_items.append(
+                NormalizedEvidence(
+                    evidence_id=f"ev-txt-{uuid.uuid4().hex[:8]}",
+                    source_modality="text",
+                    indicator_type=ind.indicator_type,
+                    description=ind.description,
+                    supporting_excerpt=ind.evidence or ind.name,
+                    severity=ind.severity,
+                    evidence_source="message_analysis_service",
+                    confidence=report.confidence,
+                    observed_versus_inferred="inferred",
+                    limitations_and_missing_checks=[],
+                )
+            )
+        safe_steps = (
+            [
+                "Do not click links or reply with personal credentials.",
+                "Verify the request through a trusted, independent phone number or channel.",
+            ]
+            if report.is_suspicious
+            else [
+                "Message exhibits typical benign communication patterns.",
+                "Exercise standard caution with unsolicited contacts.",
+            ]
+        )
+        report.explanation = await explanation_service.generate_explanation(
+            verdict=verdict,
+            score=report.risk_score,
+            tactics=[],
+            evidence_items=evidence_items,
+            safe_next_steps=safe_steps,
+            untrusted_text=payload.text,
+            model_signals={"message_classifier": {"label": report.label, "confidence": report.confidence}},
+        )
+    return report
+
+
+@router.post(
+    "/url",
+    response_model=URLScanResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Scan URL Directly",
+    description="Passively analyzes a URL using the lexical classifier without visiting or making network requests to the target.",
+)
+async def scan_url(payload: URLScanRequest) -> URLScanResponse:
+    """Performs direct passive URL threat analysis with optional explanation."""
+    url_str = payload.url.strip()
+    result = inference_engine.predict_url(url_str)
+
+    risk_score = round(result.phishing_probability * 100.0, 1)
+    if risk_score >= 80.0 or (result.is_phishing and result.confidence >= 0.75):
+        severity = "critical"
+        verdict = "high-risk"
+    elif risk_score >= 55.0 or result.is_phishing:
+        severity = "high"
+        verdict = "high-risk"
+    elif risk_score >= 30.0:
+        severity = "medium"
+        verdict = "suspicious"
+    else:
+        severity = "low"
+        verdict = "benign"
+
+    indicators: List[ThreatIndicator] = []
+    if result.is_phishing:
+        indicators.append(
+            ThreatIndicator(
+                indicator_type="phishing_url",
+                name="Phishing URL Detected",
+                severity="critical" if result.confidence >= 0.75 else "high",
+                description=f"URL exhibited lexical characteristics of phishing ({result.confidence * 100:.1f}% confidence)",
+                evidence=url_str,
+            )
+        )
+
+    explanation = None
+    if payload.include_explanation:
+        url_evidence = NormalizedEvidence(
+            evidence_id=f"ev-url-{uuid.uuid4().hex[:8]}",
+            source_modality="url",
+            indicator_type="phishing_url" if result.is_phishing else "url_lexical_analysis",
+            description=f"URL evaluated as {result.label.upper()} with {result.phishing_probability * 100:.1f}% phishing probability.",
+            supporting_excerpt=url_str,
+            severity=severity,
+            evidence_source="model_b_phiusiil_classifier",
+            confidence=result.confidence,
+            observed_versus_inferred="inferred",
+            limitations_and_missing_checks=[
+                "Lexical pattern analysis only; domain was NOT visited or crawled over HTTP/HTTPS.",
+                "Live DNS, WHOIS registration age, and SSL certificate chains not queried.",
+            ],
+        )
+        safe_steps = (
+            [
+                "Do not enter credentials or passwords on this site.",
+                "Inspect the top-level domain and verify against official organization channels.",
+                "Report the link to your security team if received unsolicited.",
+            ]
+            if result.is_phishing
+            else [
+                "URL exhibits normal lexical patterns.",
+                "Verify sender identity if received in an unexpected or urgent message.",
+            ]
+        )
+        explanation = await explanation_service.generate_explanation(
+            verdict=verdict,
+            score=risk_score,
+            tactics=[],
+            evidence_items=[url_evidence],
+            safe_next_steps=safe_steps,
+            untrusted_text=url_str,
+            model_signals={"url_classifier": result.model_dump()},
+        )
+
+    return URLScanResponse(
+        url=url_str,
+        is_phishing=result.is_phishing,
+        confidence=result.confidence,
+        label=result.label,
+        phishing_probability=result.phishing_probability,
+        risk_score=risk_score,
+        severity=severity,
+        extracted_features=result.extracted_features,
+        threat_indicators=indicators,
+        explanation=explanation,
+    )
 
 
 @router.post(
